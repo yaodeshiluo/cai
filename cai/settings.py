@@ -67,6 +67,8 @@ ROBOTSTXT_OBEY = False
 ITEM_PIPELINES = {
     'cai.pipelines.CheckPipeline': 100,
     'cai.pipelines.HandleFieldPipeline': 500,
+    'cai.pipelines.FormatPipeline': 600,
+    'cai.pipelines.SavePipeline': 900,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

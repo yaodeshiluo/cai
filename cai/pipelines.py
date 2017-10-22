@@ -4,20 +4,39 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import json
+from models.cai_sqlite_models import Match
 from scrapy.exceptions import DropItem
 
-# query_date = Field()
-# match_name = Field()
-# turn = Field()
-# match_time = Field()
-# both_sides = Field()
-# score = Field()
-# league_table = Field()
-# home_team_rank = Field()
-# guest_team_rank = Field()
-# home_team_points = Field()
-# guest_team_points = Field()
-# odds = Field()
+
+class SavePipeline(object):
+    def process_item(self, item, spider):
+        match = Match(**item)
+        match.save()
+
+
+class FormatPipeline(object):
+    def process_item(self, item, spider):
+        for field in item.fields.keys():
+            formatter = getattr(self, field + '_formatter', None)
+            if formatter is not None:
+                formatter(item)
+        return item
+
+    @staticmethod
+    def both_sides_formatter(item):
+        both_sides = item['both_sides']
+        item['both_sides'] = ' '.join(both_sides)
+
+    @staticmethod
+    def odds_formatter(item):
+        odds = item['odds']
+        item['odds'] = json.dumps(odds)
+
+    @staticmethod
+    def league_table_formatter(item):
+        league_table = item['league_table']
+        item['league_table'] = json.dumps(league_table)
 
 
 class HandleFieldPipeline(object):
