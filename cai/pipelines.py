@@ -5,18 +5,21 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import json
-from models.cai_sqlite_models import Match
+from peewee import InsertQuery
+from cai.models.cai_sqlite_models import Match
 from scrapy.exceptions import DropItem
 
 
 class SavePipeline(object):
     def process_item(self, item, spider):
-        match = Match(**item)
-        match.save()
+        InsertQuery(Match, field_dict=item).upsert().execute()
+        # match = Match(**item)
+        # match.save()
 
 
 class FormatPipeline(object):
     def process_item(self, item, spider):
+        self.common_formatter(item)
         for field in item.fields.keys():
             formatter = getattr(self, field + '_formatter', None)
             if formatter is not None:
@@ -35,8 +38,17 @@ class FormatPipeline(object):
 
     @staticmethod
     def league_table_formatter(item):
-        league_table = item['league_table']
-        item['league_table'] = json.dumps(league_table)
+        league_table = item.get('league_table')
+        if league_table is not None:
+            item['league_table'] = json.dumps(league_table)
+
+    @staticmethod
+    def common_formatter(item):
+        for field in ['home_team_rank', 'guest_team_rank', 'home_team_points', 'guest_team_points']:
+            if field in item:
+                value = item[field]
+                if not isinstance(value, basestring) or not value.isdigit():
+                    del item[field]
 
 
 class HandleFieldPipeline(object):
@@ -49,7 +61,7 @@ class HandleFieldPipeline(object):
 
     @staticmethod
     def league_table_handler(item):
-        league_table = item['league_table']
+        league_table = item.get('league_table', [])
         home_team, _, guest_team = item['both_sides']
 
         def get_rank_points_from_table(team):

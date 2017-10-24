@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import re
 from collections import namedtuple
-from scrapy.spider import Spider
+from scrapy.spiders import Spider
 from scrapy import Request
 from cai.items import Cai500Item
 
@@ -10,7 +10,7 @@ from cai.items import Cai500Item
 class Cai500Spider(Spider):
 
     name = '500'
-    start_urls = ['http://odds.500.com/index_history_2011-11-05.shtml']
+    start_urls = ['http://odds.500.com/index_history_2017-10-25.shtml']
 
     def __init__(self, **kwargs):
         super(Cai500Spider, self).__init__(**kwargs)
@@ -46,8 +46,12 @@ class Cai500Spider(Spider):
             item['score'] = self.extract_node(row.score)
             item['query_date'] = query_date
             odds_url = ''.join(row.odds_urls.xpath(u'a[text()="欧"]/@href').extract())
-            yield Request(odds_url, meta={'data': {'item': item}}, callback=self.parse_odds)
-            break  # for test
+            odds_url = response.urljoin(odds_url)
+
+            xi_page_url = ''.join(row.odds_urls.xpath(u'a[text()="析"]/@href').extract())
+            xi_page_url = response.urljoin(xi_page_url)
+            yield Request(xi_page_url, meta={'data': {'item': item, 'odds_url': odds_url}}, callback=self.parse_xi_page)
+            # break  # for test
 
     def parse_odds(self, response):
         item = response.meta['data']['item']
@@ -67,7 +71,8 @@ class Cai500Spider(Spider):
             if len(tds) != 3:
                 continue
             league_table.append(map(self.extract_node, tds))
-        item['league_table'] = league_table
+        if league_table:
+            item['league_table'] = league_table
 
         # other odds
         id = ''.join(re.findall('ouzhi-(\d*)\.shtml', response.url))
@@ -111,3 +116,21 @@ class Cai500Spider(Spider):
             'zhongpei': zhongpei
         }
         return ret
+
+    def parse_xi_page(self, response):
+        league_table = []
+        item = response.meta['data']['item']
+        odds_url = response.meta['data']['odds_url']
+
+        try:
+            table_a, table_b = response.xpath('//div[@class="M_box"]/div[@class="M_content"]/div[contains(@class, "team")]')
+            home_team, _, guest_team = item['both_sides']
+            points_xpath = 'table//tr[2]/td[9]'
+            rank_xpath = 'table//tr[2]/td[10]'
+            league_table.append([self.extract_node(table_a.xpath(rank_xpath)[0]), home_team, self.extract_node(table_a.xpath(points_xpath))])
+            league_table.append([self.extract_node(table_b.xpath(rank_xpath)[0]), guest_team, self.extract_node(table_b.xpath(points_xpath))])
+            if not item.get('league_table'):
+                item['league_table'] = league_table
+        except Exception:
+            pass
+        yield Request(odds_url, meta={'data': {'item': item}}, callback=self.parse_odds)

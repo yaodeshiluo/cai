@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 from peewee import *
 
-db = SqliteDatabase('cai.sqlite')
+path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'cai.sqlite'
+)
+
+db = SqliteDatabase(path)
 
 
 class BaseModel(Model):
