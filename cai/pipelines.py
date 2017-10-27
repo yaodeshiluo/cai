@@ -5,42 +5,49 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 import json
-from peewee import InsertQuery
 from cai.models.cai_sqlite_models import Match
 from scrapy.exceptions import DropItem
 
 
 class SavePipeline(object):
     def process_item(self, item, spider):
-        # InsertQuery(Match, field_dict=item).upsert().execute()
         search = {
             'query_date': item['query_date'],
             'match_name': item['match_name'],
             'both_sides': item['both_sides'],
         }
-        old_item = Match.get(**search)
-        if old_item:
-            to_update = self.get_to_update(old_item, item)
-            Match.update(**to_update).where(id=old_item['id'])
-        else:
+        old_item = Match.filter(**search)
+        if len(old_item) == 0:
             m = Match(**item)
             m.save()
+        else:
+            old_item = old_item[0]
+            to_update = self.get_to_update(old_item, item)
+            if to_update:
+                Match.update(**to_update).where(Match.id == old_item.id).execute()
 
     @staticmethod
-    def get_to_update(old_item, new_item, just_complete=False):
+    def get_to_update(old_item, new_item):
         to_update = {}
-        for key, new_value in new_item.iteritems():
-            old_value = old_item.get(key)
+        for key in new_item.fields.keys():
+            old_value = getattr(old_item, key, None)
+            new_value = new_item.get(key)
             if not old_value:
                 if new_value:
                     to_update[key] = new_value
-            elif not just_complete:
+            else:
                 if new_value:
                     if key == 'odds':
                         old_value = json.loads(old_value)
                         new_value = json.loads(new_value)
-                        old_value.update(SavePipeline.get_to_update(old_value, new_value, just_complete=True))
-                        to_update[key] = json.dumps(old_value)
+                        has_new = False
+                        for k in new_value.keys():
+                            if not old_value.get(k):
+                                if new_value.get(k):
+                                    old_value[k] = new_value[k]
+                                    has_new = True
+                        if has_new:
+                            to_update[key] = json.dumps(old_value)
                     elif key == 'score':
                         if 'VS' not in new_value and new_item != old_value:
                             to_update[key] = new_value
@@ -59,7 +66,7 @@ class FormatPipeline(object):
     @staticmethod
     def both_sides_formatter(item):
         both_sides = item['both_sides']
-        item['both_sides'] = ' '.join(both_sides)
+        item['both_sides'] = ' '.join([both_sides[0], both_sides[-1]])
 
     @staticmethod
     def odds_formatter(item):

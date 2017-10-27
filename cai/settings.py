@@ -101,3 +101,5 @@ DEFAULT_REQUEST_HEADERS = {
     'Connection': 'keep-alive',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.91 Safari/537.36'
 }
+
+# LOG_LEVEL = 'INFO'
