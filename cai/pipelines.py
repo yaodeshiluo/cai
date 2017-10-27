@@ -4,6 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import logging
 import json
 from cai.models.cai_sqlite_models import Match
 from scrapy.exceptions import DropItem
@@ -20,10 +21,13 @@ class SavePipeline(object):
         if len(old_item) == 0:
             m = Match(**item)
             m.save()
+            logging.info('save: %s  %s  %s' % (search['query_date'], search['match_name'], search['both_sides']))
         else:
             old_item = old_item[0]
             to_update = self.get_to_update(old_item, item)
             if to_update:
+                logging.info('update: %s  %s  %s' % (search['query_date'], search['match_name'], search['both_sides']))
+                logging.info(to_update)
                 Match.update(**to_update).where(Match.id == old_item.id).execute()
 
     @staticmethod
