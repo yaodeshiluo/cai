@@ -38,7 +38,14 @@ class SavePipeline(object):
             old_value = getattr(old_item, key, None)
             new_value = new_item.get(key)
             if not old_value:
-                if new_value:
+                if isinstance(old_value, int):
+                    try:
+                        new_value = int(new_value)
+                    except:
+                        pass
+                    if isinstance(new_value, int) and new_value != 0:
+                        to_update[key] = str(new_value)
+                elif new_value:
                     to_update[key] = new_value
             else:
                 if new_value:
