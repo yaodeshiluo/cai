@@ -48,9 +48,7 @@ class SavePipeline(object):
                                     has_new = True
                         if has_new:
                             to_update[key] = json.dumps(old_value)
-                    elif key == 'score':
-                        if 'VS' not in new_value and new_item != old_value:
-                            to_update[key] = new_value
+
         return to_update
 
 
@@ -64,9 +62,15 @@ class FormatPipeline(object):
         return item
 
     @staticmethod
+    def score_formatter(item):
+        score = item.get('score')
+        if score and ':' not in score:
+            del item['score']
+
+    @staticmethod
     def both_sides_formatter(item):
         both_sides = item['both_sides']
-        item['both_sides'] = ' '.join([both_sides[0], both_sides[-1]])
+        item['both_sides'] = ' VS '.join([both_sides[0], both_sides[-1]])
 
     @staticmethod
     def odds_formatter(item):

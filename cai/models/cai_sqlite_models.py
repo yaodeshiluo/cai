@@ -23,7 +23,7 @@ class Match(BaseModel):
     turn = CharField(null=True)
     match_time = CharField()
     both_sides = CharField()
-    score = CharField()
+    score = CharField(null=True)
     home_team_rank = IntegerField(null=True)
     guest_team_rank = IntegerField(null=True)
     home_team_points = IntegerField(null=True)
