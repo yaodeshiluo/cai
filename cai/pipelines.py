@@ -29,6 +29,7 @@ class SavePipeline(object):
                 logging.info('update: %s  %s  %s' % (search['query_date'], search['match_name'], search['both_sides']))
                 logging.info(to_update)
                 Match.update(**to_update).where(Match.id == old_item.id).execute()
+        return item
 
     @staticmethod
     def get_to_update(old_item, new_item):
