@@ -12,9 +12,39 @@ from scrapy.exceptions import DropItem
 
 class SavePipeline(object):
     def process_item(self, item, spider):
-        InsertQuery(Match, field_dict=item).upsert().execute()
-        # match = Match(**item)
-        # match.save()
+        # InsertQuery(Match, field_dict=item).upsert().execute()
+        search = {
+            'query_date': item['query_date'],
+            'match_name': item['match_name'],
+            'both_sides': item['both_sides'],
+        }
+        old_item = Match.get(**search)
+        if old_item:
+            to_update = self.get_to_update(old_item, item)
+            Match.update(**to_update).where(id=old_item['id'])
+        else:
+            m = Match(**item)
+            m.save()
+
+    @staticmethod
+    def get_to_update(old_item, new_item, just_complete=False):
+        to_update = {}
+        for key, new_value in new_item.iteritems():
+            old_value = old_item.get(key)
+            if not old_value:
+                if new_value:
+                    to_update[key] = new_value
+            elif not just_complete:
+                if new_value:
+                    if key == 'odds':
+                        old_value = json.loads(old_value)
+                        new_value = json.loads(new_value)
+                        old_value.update(SavePipeline.get_to_update(old_value, new_value, just_complete=True))
+                        to_update[key] = json.dumps(old_value)
+                    elif key == 'score':
+                        if 'VS' not in new_value and new_item != old_value:
+                            to_update[key] = new_value
+        return to_update
 
 
 class FormatPipeline(object):
