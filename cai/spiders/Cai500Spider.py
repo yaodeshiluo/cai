@@ -82,19 +82,37 @@ class Cai500Spider(Spider):
 
     def parse_next_odds(self, response):
         item = response.meta['data']['item']
-        if response.body:
-            odds = item['odds']
+        # if response.body:
+        #     odds = item['odds']
+        #     for tr in response.xpath('//tr[@xls="row"]'):
+        #         _ = self._parse_odds_tr(tr)
+        #         if _ is not None:
+        #             odds.update(_)
+
+        #     id = response.meta['data']['id']
+        #     start = response.meta['data']['start'] + 30
+        #     next_odds_url = self.base_next_odds_url.format(start=start, id=id)
+        #     yield Request(next_odds_url, meta={'data': {'item': item, 'start': start, 'id': id}}, callback=self.parse_next_odds)
+        # else:
+        #     yield item
+
+        odds = item['odds']
+        other_odds = {}
+        try:
             for tr in response.xpath('//tr[@xls="row"]'):
                 _ = self._parse_odds_tr(tr)
                 if _ is not None:
-                    odds.update(_)
-
+                    other_odds.update(_)
+        except Exception:
+            pass
+        if not other_odds:
+            yield item
+        else:
+            odds.update(other_odds)
             id = response.meta['data']['id']
             start = response.meta['data']['start'] + 30
             next_odds_url = self.base_next_odds_url.format(start=start, id=id)
             yield Request(next_odds_url, meta={'data': {'item': item, 'start': start, 'id': id}}, callback=self.parse_next_odds)
-        else:
-            yield item
 
     def _parse_odds_tr(self, tr):
         tds = tr.xpath('td')
