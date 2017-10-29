@@ -10,7 +10,7 @@ from cai.items import Cai500Item
 class Cai500Spider(Spider):
 
     name = '500'
-    start_urls = ['http://odds.500.com/index_history_2017-10-25.shtml']
+    start_urls = ['http://odds.500.com/index_history_2010-01-17.shtml']
 
     def __init__(self, **kwargs):
         super(Cai500Spider, self).__init__(**kwargs)
@@ -145,9 +145,26 @@ class Cai500Spider(Spider):
             home_team, _, guest_team = item['both_sides']
             points_xpath = 'table//tr[2]/td[9]'
             rank_xpath = 'table//tr[2]/td[10]'
-            league_table.append([self.extract_node(table_a.xpath(rank_xpath)[0]), home_team, self.extract_node(table_a.xpath(points_xpath))])
-            league_table.append([self.extract_node(table_b.xpath(rank_xpath)[0]), guest_team, self.extract_node(table_b.xpath(points_xpath))])
-            if not item.get('league_table'):
+
+            table_a_extract = [self.extract_node(table_a.xpath(rank_xpath)[0]), home_team, self.extract_node(table_a.xpath(points_xpath)[0])]
+            home_team_rank, home_team_points = table_a_extract[0], table_a_extract[-1]
+            if home_team_rank:
+                item['home_team_rank'] = home_team_rank
+            if home_team_points:
+                item['home_team_points'] = home_team_points
+            if home_team_rank or home_team_points:
+                league_table.append(table_a_extract)
+
+            table_b_extract = [self.extract_node(table_b.xpath(rank_xpath)[0]), guest_team, self.extract_node(table_b.xpath(points_xpath)[0])]
+            guest_team_rank, guest_team_points = table_b_extract[0], table_b_extract[-1]
+            if guest_team_rank:
+                item['guest_team_rank'] = guest_team_rank
+            if guest_team_points:
+                item['guest_team_points'] = guest_team_points
+            if guest_team_rank or guest_team_points:
+                league_table.append(table_b_extract)
+
+            if not item.get('league_table') and league_table:
                 item['league_table'] = league_table
         except Exception:
             pass
