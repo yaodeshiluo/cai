@@ -46,4 +46,4 @@ cai/models/cai.sqlite
 | home_team_points | 主队赛前积分 |
 | guest_team_points | 客队赛前排名 |
 | league_table | 赛前积分榜(有些数据只能从析页面提取了两只队伍的积分和排名, 没有完整数据) |
-| odds | 进入欧页面抓取的赔率信息,格式为{‘威廉希尔’,: { ‘chupei’: [2.5,3.3,2.8], ‘zhongpei’:[3.1,2.8,3.0] } … } |
+| odds | 进入欧页面抓取的赔率信息,存储为json,格式为{‘威廉希尔’,: { ‘chupei’: [2.5,3.3,2.8], ‘zhongpei’:[3.1,2.8,3.0] } … } |
